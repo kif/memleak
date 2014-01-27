@@ -48,5 +48,7 @@ for i in range(10):
     d.init_lut()
     for j in range(2):
         d.use_lut()
-print("Memory leak: %sMB" % ((get_mem() - mem_del) / 10.))
+memleak = ((get_mem() - mem_del) / 10.)
+print("Memory leak: %.3fMB" % memleak)
+assert memleak < 1
 #print sys.getrefcount(l), gc.get_referents(l)
