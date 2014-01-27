@@ -11,6 +11,7 @@ cdef struct lut_point:
     numpy.float32_t coef
 dtype_lut=numpy.dtype([("idx",numpy.int32),("coef",numpy.float32)])
 
+cdef bint NEED_DECREF = sys.version_info<(2,7) and numpy.version.version<"1.5"
 
 class DemoLeak(object):
     """
@@ -22,7 +23,7 @@ class DemoLeak(object):
         self.lut = None
         self.dim0=dim0
         self.dim1=dim1
-        self.need_decref = sys.version_info<(2,7)
+        
 
     def init_lut(self):
         cdef lut_point[:,:] lut       
@@ -40,15 +41,15 @@ class DemoLeak(object):
         
     def use_lut(self):
         cdef int rc_before, rc_after
-        cdef bint need_decref = False
+        
         rc_before = sys.getrefcount(self.lut)
         cdef lut_point[:,:] lut = self.lut
         rc_after = sys.getrefcount(self.lut)
-        need_decref = self.need_decref &  ((rc_after-rc_before)>=2)
+        cdef bint need_decref = NEED_DECREF and ((rc_after-rc_before)>=2)
         
 
 
-        if need_decref:
-            print("Decref needed", self.need_decref, rc_after, rc_before, need_decref)
+        if need_decref and (sys.getrefcount(self.lut)>(rc_before+1)):
+            print("Decref needed", NEED_DECREF, rc_after, rc_before, need_decref)
             Py_XDECREF(<PyObject *> self.lut)
 
